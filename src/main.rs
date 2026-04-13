@@ -1,4 +1,5 @@
 mod cli;
+mod scope;
 
 use clap::Parser;
 use cli::Cli;
