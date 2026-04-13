@@ -26,8 +26,10 @@ pub fn validate(path: &Path) -> Result<ValidationResult> {
     };
 
     // Stage 1: syntax via plutil
+    let path_s = path.to_str()
+        .ok_or_else(|| anyhow::anyhow!("path contains non-UTF-8 characters: {}", path.display()))?;
     let output = Command::new("plutil")
-        .args(["-lint", path.to_str().unwrap_or("")])
+        .args(["-lint", path_s])
         .output()
         .map_err(|e| anyhow::anyhow!("failed to run plutil: {}", e))?;
 
