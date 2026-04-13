@@ -61,6 +61,10 @@ pub fn delete_hash(label: &str) -> Result<()> {
 mod tests {
     use super::*;
     use tempfile::TempDir;
+    use std::sync::Mutex;
+
+    // Mutex to ensure tests don't run in parallel and interfere with env vars
+    static TEST_LOCK: Mutex<()> = Mutex::new(());
 
     fn setup(tmp: &TempDir) -> PathBuf {
         let state = tmp.path().join("state");
@@ -73,6 +77,7 @@ mod tests {
 
     #[test]
     fn test_compute_hash_is_deterministic() {
+        let _lock = TEST_LOCK.lock().unwrap();
         let tmp = TempDir::new().unwrap();
         let plist = tmp.path().join("a.plist");
         std::fs::write(&plist, b"hello").unwrap();
@@ -83,6 +88,7 @@ mod tests {
 
     #[test]
     fn test_compute_hash_differs_for_different_content() {
+        let _lock = TEST_LOCK.lock().unwrap();
         let tmp = TempDir::new().unwrap();
         let p1 = tmp.path().join("a.plist");
         let p2 = tmp.path().join("b.plist");
@@ -93,6 +99,7 @@ mod tests {
 
     #[test]
     fn test_read_hash_returns_none_when_missing() {
+        let _lock = TEST_LOCK.lock().unwrap();
         let tmp = TempDir::new().unwrap();
         setup(&tmp);
         let result = read_hash("com.example.nonexistent").unwrap();
@@ -101,6 +108,7 @@ mod tests {
 
     #[test]
     fn test_write_then_read_hash() {
+        let _lock = TEST_LOCK.lock().unwrap();
         let tmp = TempDir::new().unwrap();
         let plist = setup(&tmp);
         write_hash("com.example.test", &plist).unwrap();
@@ -111,6 +119,7 @@ mod tests {
 
     #[test]
     fn test_delete_hash_removes_file() {
+        let _lock = TEST_LOCK.lock().unwrap();
         let tmp = TempDir::new().unwrap();
         let plist = setup(&tmp);
         write_hash("com.example.test", &plist).unwrap();
@@ -121,6 +130,7 @@ mod tests {
 
     #[test]
     fn test_delete_hash_is_idempotent() {
+        let _lock = TEST_LOCK.lock().unwrap();
         let tmp = TempDir::new().unwrap();
         setup(&tmp);
         delete_hash("com.example.nonexistent").unwrap();
