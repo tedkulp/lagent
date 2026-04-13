@@ -208,5 +208,23 @@ pub fn reload(agent_id: &str, user: bool) -> Result<()> {
 }
 
 pub fn validate(agent_id: &str, user: bool) -> Result<()> {
-    todo!("validate - implemented in Task 13")
+    let dir = scope::target_dir(user)?;
+    let agent = agent::resolve(agent_id, &dir)?;
+
+    let result = validate_mod::validate(&agent.path)?;
+
+    for warning in &result.warnings {
+        eprintln!("{} {}", "warning:".yellow(), warning);
+    }
+
+    if result.errors.is_empty() {
+        println!("{} {} is valid", "✓".green(), agent.path.display());
+    } else {
+        for error in &result.errors {
+            eprintln!("{} {}", "error:".red(), error);
+        }
+        std::process::exit(1);
+    }
+
+    Ok(())
 }
