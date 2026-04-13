@@ -1,3 +1,10 @@
+mod cli;
+
+use clap::Parser;
+use cli::Cli;
+
 fn main() {
-    println!("lagent");
+    let cli = Cli::parse();
+    let _ = cli;
+    println!("TODO: dispatch");
 }
