@@ -1,5 +1,7 @@
+mod agent;
 mod cli;
 mod scope;
+mod state;
 
 use clap::Parser;
 use cli::Cli;
