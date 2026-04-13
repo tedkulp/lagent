@@ -71,28 +71,97 @@ pub fn list(user: bool) -> Result<()> {
     Ok(())
 }
 
-pub fn status(_agent: &str, _user: bool) -> Result<()> {
-    todo!("status - implemented in Task 9")
+pub fn status(agent_id: &str, user: bool) -> Result<()> {
+    let dir = scope::target_dir(user)?;
+    let agent = agent::resolve(agent_id, &dir)?;
+
+    let loaded_map: std::collections::HashMap<String, (bool, Option<u32>)> =
+        launchctl::list_loaded(user)?
+            .into_iter()
+            .map(|e| (e.label, (e.running, e.pid)))
+            .collect();
+
+    let (loaded, running, pid) = if let Some(&(running, pid)) = loaded_map.get(&agent.label) {
+        (true, running, pid)
+    } else {
+        (false, false, None)
+    };
+
+    println!("{}: {}", "label".bold(), agent.label);
+    println!("{}: {}", "path".bold(), agent.path.display());
+    println!(
+        "{}: {}",
+        "loaded".bold(),
+        if loaded {
+            "yes".green().to_string()
+        } else {
+            "no".yellow().to_string()
+        }
+    );
+    println!(
+        "{}: {}",
+        "running".bold(),
+        if running {
+            "yes".green().to_string()
+        } else {
+            "no".dimmed().to_string()
+        }
+    );
+    println!(
+        "{}: {}",
+        "pid".bold(),
+        pid.map(|p| p.to_string())
+            .unwrap_or_else(|| "-".dimmed().to_string())
+    );
+
+    if !loaded {
+        std::process::exit(1);
+    }
+
+    Ok(())
 }
 
-pub fn enable(_agent: &str, _user: bool) -> Result<()> {
-    todo!("enable - implemented in Task 10")
+pub fn enable(agent_id: &str, user: bool) -> Result<()> {
+    let dir = scope::target_dir(user)?;
+    let agent = agent::resolve(agent_id, &dir)?;
+    launchctl::load(&agent.path)?;
+    state::write_hash(&agent.label, &agent.path)?;
+    println!("{} enabled {}", "✓".green(), agent.label);
+    Ok(())
 }
 
-pub fn disable(_agent: &str, _user: bool) -> Result<()> {
-    todo!("disable - implemented in Task 10")
+pub fn disable(agent_id: &str, user: bool) -> Result<()> {
+    let dir = scope::target_dir(user)?;
+    let agent = agent::resolve(agent_id, &dir)?;
+    launchctl::unload(&agent.path)?;
+    state::delete_hash(&agent.label)?;
+    println!("{} disabled {}", "✓".green(), agent.label);
+    Ok(())
 }
 
-pub fn start(_agent: &str, _user: bool) -> Result<()> {
-    todo!("start - implemented in Task 11")
+pub fn start(agent_id: &str, user: bool) -> Result<()> {
+    let dir = scope::target_dir(user)?;
+    let agent = agent::resolve(agent_id, &dir)?;
+    launchctl::start(&agent.label)?;
+    println!("{} started {}", "✓".green(), agent.label);
+    Ok(())
 }
 
-pub fn stop(_agent: &str, _user: bool) -> Result<()> {
-    todo!("stop - implemented in Task 11")
+pub fn stop(agent_id: &str, user: bool) -> Result<()> {
+    let dir = scope::target_dir(user)?;
+    let agent = agent::resolve(agent_id, &dir)?;
+    launchctl::stop(&agent.label)?;
+    println!("{} stopped {}", "✓".green(), agent.label);
+    Ok(())
 }
 
-pub fn restart(_agent: &str, _user: bool) -> Result<()> {
-    todo!("restart - implemented in Task 11")
+pub fn restart(agent_id: &str, user: bool) -> Result<()> {
+    let dir = scope::target_dir(user)?;
+    let agent = agent::resolve(agent_id, &dir)?;
+    launchctl::stop(&agent.label)?;
+    launchctl::start(&agent.label)?;
+    println!("{} restarted {}", "✓".green(), agent.label);
+    Ok(())
 }
 
 pub fn reload(_agent: &str, _user: bool) -> Result<()> {
