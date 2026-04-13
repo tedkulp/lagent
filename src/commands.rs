@@ -164,8 +164,47 @@ pub fn restart(agent_id: &str, user: bool) -> Result<()> {
     Ok(())
 }
 
-pub fn reload(_agent: &str, _user: bool) -> Result<()> {
-    todo!("reload - implemented in Task 12")
+pub fn reload(agent_id: &str, user: bool) -> Result<()> {
+    let dir = scope::target_dir(user)?;
+    let agent = agent::resolve(agent_id, &dir)?;
+
+    // Hash check — skip if plist hasn't changed
+    let current_hash = state::compute_hash(&agent.path)?;
+    let stored_hash = state::read_hash(&agent.label)?;
+
+    if stored_hash.as_deref() == Some(current_hash.as_str()) {
+        println!("No changes detected in {}, skipping.", agent.label.dimmed());
+        return Ok(());
+    }
+
+    // Check running state before unloading
+    let loaded_map: std::collections::HashMap<String, (bool, Option<u32>)> =
+        launchctl::list_loaded(user)?
+            .into_iter()
+            .map(|e| (e.label, (e.running, e.pid)))
+            .collect();
+    let was_running = loaded_map
+        .get(&agent.label)
+        .map(|(r, _)| *r)
+        .unwrap_or(false);
+
+    // Unload and reload without changing disabled/enabled state
+    launchctl::unload_quiet(&agent.path)?;
+    launchctl::load_quiet(&agent.path)?;
+
+    if was_running {
+        launchctl::start(&agent.label)?;
+        println!("{} reloaded and restarted {}", "✓".green(), agent.label);
+    } else {
+        println!(
+            "{} reloaded {} (not restarted, was not running)",
+            "✓".green(),
+            agent.label
+        );
+    }
+
+    state::write_hash(&agent.label, &agent.path)?;
+    Ok(())
 }
 
 pub fn validate(agent_id: &str, user: bool) -> Result<()> {
