@@ -1,0 +1,25 @@
+[package]
+name = "lagent"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "lagent"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+clap_complete = "4"
+owo-colors = "4"
+plist = "1"
+sha2 = "0.10"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+opt-level = 3
+strip = true
+lto = true
+codegen-units = 1
