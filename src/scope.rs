@@ -33,10 +33,6 @@ pub fn system_agents_dir() -> PathBuf {
     PathBuf::from("/Library/LaunchAgents")
 }
 
-/// When running as root via sudo, $SUDO_USER holds the original username.
-pub fn sudo_user() -> Option<String> {
-    std::env::var("SUDO_USER").ok().filter(|u| !u.is_empty())
-}
 
 #[cfg(test)]
 mod tests {
