@@ -3,6 +3,7 @@ mod cli;
 mod launchctl;
 mod scope;
 mod state;
+mod validate;
 
 use clap::Parser;
 use cli::Cli;
