@@ -1,5 +1,6 @@
 mod agent;
 mod cli;
+mod launchctl;
 mod scope;
 mod state;
 
