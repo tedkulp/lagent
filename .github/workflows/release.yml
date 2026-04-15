@@ -70,7 +70,7 @@ jobs:
           homebrew_owner: tedkulp
           homebrew_tap: homebrew-tap
           formula_folder: Formula
-          github_token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          github_token: ${{ secrets.TAP_GITHUB_TOKEN }}
           commit_owner: tedkulp
           commit_email: ted@tedkulp.com
           install: 'bin.install "lagent"'
