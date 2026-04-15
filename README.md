@@ -8,7 +8,7 @@ A `systemctl`-style CLI for managing macOS LaunchAgents.
 just install
 ```
 
-This builds a release binary and copies it to `/usr/local/bin/lagent`.
+This installs the binary to `~/.cargo/bin/lagent` via `cargo install`.
 
 **Requirements:** macOS, Rust toolchain (for building), `just` (for the recipes).
 
@@ -37,11 +37,12 @@ The `--user` flag targets `~/Library/LaunchAgents`. Without it, commands operate
 
 ### Agent names
 
-Commands that take `<agent>` accept either the plist filename (with or without `.plist`) or the `Label` value inside the plist.
+Commands that take `<agent>` accept either the plist filename (with or without `.plist`) or the `Label` value inside the plist. Exact matches are tried first; if nothing matches exactly, a case-sensitive substring search is used. If the substring matches more than one agent, the command errors and lists the candidates.
 
 ```bash
-lagent status com.example.myapp
-lagent status com.example.myapp.plist
+lagent status com.example.myapp        # exact
+lagent status com.example.myapp.plist  # exact, strips .plist
+lagent restart headroom                 # fuzzy: matches com.tedkulp.headroom-proxy
 ```
 
 ### Examples
@@ -85,7 +86,7 @@ lagent completions fish > ~/.config/fish/completions/lagent.fish
 ```bash
 just test     # run tests
 just build    # build release binary
-just install  # install to /usr/local/bin
+just install  # install to ~/.cargo/bin via cargo install
 just clean    # clean build artifacts
 ```
 

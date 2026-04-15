@@ -8,9 +8,12 @@ pub struct Agent {
 }
 
 /// Resolve an agent by label or filename stem in the given directory.
+/// Tries exact match first; falls back to substring match if no exact match is found.
 pub fn resolve(id: &str, dir: &Path) -> Result<Agent> {
     let needle = id.trim_end_matches(".plist");
-    let mut matches: Vec<Agent> = Vec::new();
+
+    let mut exact: Vec<Agent> = Vec::new();
+    let mut fuzzy: Vec<Agent> = Vec::new();
 
     for entry in std::fs::read_dir(dir)
         .map_err(|e| anyhow::anyhow!("cannot read directory {}: {}", dir.display(), e))?
@@ -28,26 +31,28 @@ pub fn resolve(id: &str, dir: &Path) -> Result<Agent> {
             .unwrap_or("")
             .to_string();
 
-        if stem == needle {
-            let label = read_label(&path).unwrap_or_else(|_| stem.clone());
-            matches.push(Agent { path, label });
+        let label = read_label(&path).unwrap_or_else(|_| stem.clone());
+
+        if stem == needle || label == needle {
+            exact.push(Agent { path, label });
             continue;
         }
 
-        if let Ok(label) = read_label(&path) {
-            if label == needle {
-                matches.push(Agent { path, label });
-            }
+        if stem.contains(needle) || label.contains(needle) {
+            fuzzy.push(Agent { path, label });
         }
     }
 
-    match matches.len() {
+    let candidates = if !exact.is_empty() { exact } else { fuzzy };
+
+    match candidates.len() {
         0 => anyhow::bail!("no agent found matching '{}'", id),
-        1 => Ok(matches.remove(0)),
+        1 => Ok(candidates.into_iter().next().unwrap()),
         _ => {
-            let names: Vec<_> = matches.iter().map(|a| a.label.as_str()).collect();
+            let mut names: Vec<_> = candidates.iter().map(|a| a.label.as_str()).collect();
+            names.sort();
             anyhow::bail!(
-                "ambiguous agent name '{}', matches: {}",
+                "ambiguous: '{}' matches multiple agents: {}",
                 id,
                 names.join(", ")
             )
@@ -141,4 +146,42 @@ mod tests {
         let agent = resolve("com.example.myapp", dir.path()).unwrap();
         assert_eq!(agent.path, expected_path);
     }
+
+    #[test]
+    fn test_resolve_fuzzy_match_by_label_substring() {
+        let dir = TempDir::new().unwrap();
+        write_plist(dir.path(), "com.tedkulp.headroom-proxy", "com.tedkulp.headroom-proxy");
+        let agent = resolve("headroom", dir.path()).unwrap();
+        assert_eq!(agent.label, "com.tedkulp.headroom-proxy");
+    }
+
+    #[test]
+    fn test_resolve_fuzzy_match_by_stem_substring() {
+        let dir = TempDir::new().unwrap();
+        write_plist(dir.path(), "com.tedkulp.headroom-proxy", "com.tedkulp.headroom-proxy");
+        let agent = resolve("headroom-proxy", dir.path()).unwrap();
+        assert_eq!(agent.label, "com.tedkulp.headroom-proxy");
+    }
+
+    #[test]
+    fn test_resolve_fuzzy_ambiguous_returns_error() {
+        let dir = TempDir::new().unwrap();
+        write_plist(dir.path(), "com.example.myapp", "com.example.myapp");
+        write_plist(dir.path(), "com.example.myapp-worker", "com.example.myapp-worker");
+        let result = resolve("myapp", dir.path());
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("ambiguous"), "expected ambiguous error, got: {}", msg);
+    }
+
+    #[test]
+    fn test_resolve_exact_preferred_over_fuzzy() {
+        let dir = TempDir::new().unwrap();
+        write_plist(dir.path(), "myapp", "myapp");
+        write_plist(dir.path(), "com.example.myapp", "com.example.myapp");
+        // exact match on stem "myapp" should win, not trigger ambiguity with fuzzy
+        let agent = resolve("myapp", dir.path()).unwrap();
+        assert_eq!(agent.label, "myapp");
+    }
+
 }

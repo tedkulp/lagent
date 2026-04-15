@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-04-15
+
+### Added
+- Fuzzy (substring) agent resolution — `lagent restart headroom` now matches `com.tedkulp.headroom-proxy` without typing the full label
+- Exact match always takes priority over fuzzy; ambiguous fuzzy matches are an error listing all candidates
+
+### Changed
+- `just install` now uses `cargo install --path .` (installs to `~/.cargo/bin`) instead of requiring `sudo` to copy to `/usr/local/bin`
+- Running `just` with no arguments now lists available recipes
 ## [0.1.0] - 2026-04-13
 
 ### Added
@@ -26,5 +35,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SHA256 hash state stored at `~/.local/share/lagent/<label>.hash`
 - Makefile replaced with `justfile` (recipes: `test`, `build`, `install`, `clean`)
 
-[Unreleased]: https://github.com/tedkulp/lagent/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/tedkulp/lagent/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/tedkulp/lagent/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/tedkulp/lagent/releases/tag/v0.1.0

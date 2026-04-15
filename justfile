@@ -1,11 +1,14 @@
+default:
+    just --list
+
 test:
     cargo test
 
 build:
     cargo build --release
 
-install: build
-    install -m 755 target/release/lagent /usr/local/bin/lagent
+install:
+    cargo install --path .
 
 clean:
     cargo clean
